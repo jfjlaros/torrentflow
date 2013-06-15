@@ -5,6 +5,7 @@ import collections
 from matplotlib import pyplot
 
 from barcode.barcode import BarCode
+from fastools import fastools
 
 #from . import docSplit, version, usage
 usage = ["", ""]
@@ -16,16 +17,15 @@ def makeHistogram(length):
     histogram = collections.defaultdict(int)
 
     for barcode in BarCode().allBarcodes(length):
-        i = 0
         j = 0
 
-        while j < len(barcode):
-            while j < len(barcode) and order[i % len(order)] == barcode[j]:
+        for i in fastools.collapse(barcode, 1)[0]:
+            while order[j % len(order)] != i:
                 j += 1
-            i += 1
-        #while
+            j += 1
+        #for
 
-        histogram[i] += 1
+        histogram[j] += 1
     #for
 
     return histogram
@@ -56,8 +56,8 @@ def main():
 
     args = parser.parse_args()
 
-    print torrentflow(args.length)
-    print "total: %i" % 4 ** args.length
+    torrentflow(args.length)
+    #print "total: %i" % 4 ** args.length
 #main
 
 if __name__ == '__main__':
