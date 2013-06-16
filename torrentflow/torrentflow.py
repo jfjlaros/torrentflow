@@ -9,14 +9,14 @@ from fastools import fastools
 
 #from . import docSplit, version, usage
 usage = ["", ""]
+order = "TACGTACGTCTGAGCATCGATCGATGTACAGC"
 
-def makeHistogram(length):
+def makeHistogram(barcodeList):
     """
     """
-    order = "TACGTACGTCTGAGCATCGATCGATGTACAGC"
     histogram = collections.defaultdict(int)
 
-    for barcode in BarCode().allBarcodes(length):
+    for barcode in barcodeList:
         j = 0
 
         for i in fastools.collapse(barcode, 1)[0]:
@@ -35,14 +35,53 @@ def torrentflow(length):
     """
     """
     for i in range(1, length + 1):
-        h = makeHistogram(i)
+        h = makeHistogram(list(BarCode().allBarcodes(i)))
 
-        x = pyplot.plot(h.keys(), h.values(), "o-", label=str(i))
+        pyplot.plot(h.keys(), h.values(), "o-", label=str(i))
     #for
 
     pyplot.legend(numpoints=1)
     pyplot.show()
 #torrentflow
+
+def testflow(barCodeList):
+    """
+    """
+    h = makeHistogram(barCodeList)
+
+    pyplot.plot(h.keys(), h.values(), "o-")
+    pyplot.show()
+#testflow
+
+def gen(pos):
+    """
+    """
+    c = order[pos]
+    w = c
+
+    for i in range(pos - 1, -1, -1):
+        if order[i] == c:
+            w += order[i + 1]
+            c = order[i + 1]
+        #if
+
+    return w[::-1]
+#gen
+
+def expand(barcode, length):
+    """
+    """
+    return barcode + (barcode[-1] * (length - len(barcode)))
+#expand
+
+def genList(length):
+    """
+    """
+    bc = map(lambda x: gen(x), range(length))
+    newLength = max(map(lambda x: len(x), bc))
+
+    return map(lambda x: expand(x, newLength), bc)
+#genList
 
 def main():
     """
@@ -56,8 +95,10 @@ def main():
 
     args = parser.parse_args()
 
-    torrentflow(args.length)
-    #print "total: %i" % 4 ** args.length
+    #torrentflow(args.length)
+    bc = genList(args.length)
+    print '\n'.join(bc)
+    #testflow(bc)
 #main
 
 if __name__ == '__main__':
