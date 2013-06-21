@@ -5,28 +5,40 @@ import collections
 from matplotlib import pyplot
 
 from barcode.barcode import BarCode
-from fastools import fastools
+#from fastools import fastools
 
 #from . import docSplit, version, usage
 usage = ["", ""]
-order = "TACGTACGTCTGAGCATCGATCGATGTACAGC"
 
-def makeHistogram(barcodeList):
+order = "TACGTACGTCTGAGCATCGATCGATGTACAGC"
+key = "TCAG"
+
+def findFlow(fragment):
+    """
+    Calculate the flow position after sequencing {fragment}.
+
+    @arg fragment: A DNA fragment.
+    @type fragment: str
+
+    @returns: The flow position.
+    @rtype: int
+    """
+    position = 0
+
+    for nucleotide in fragment:
+        while order[position % len(order)] != nucleotide:
+            position += 1
+
+    return position
+#findFlow
+
+def makeHistogram(fragments):
     """
     """
     histogram = collections.defaultdict(int)
 
-    for barcode in barcodeList:
-        j = 0
-
-        for i in fastools.collapse(barcode, 1)[0]:
-            while order[j % len(order)] != i:
-                j += 1
-            j += 1
-        #for
-
-        histogram[j] += 1
-    #for
+    for fragment in fragments:
+        histogram[findFlow(fragment)] += 1
 
     return histogram
 #makeHistogram
@@ -41,6 +53,8 @@ def torrentflow(length):
     #for
 
     pyplot.legend(numpoints=1)
+    pyplot.xlabel("flow number")
+    pyplot.ylabel("amount")
     pyplot.show()
 #torrentflow
 
@@ -50,6 +64,8 @@ def testflow(barCodeList):
     h = makeHistogram(barCodeList)
 
     pyplot.plot(h.keys(), h.values(), "o-")
+    pyplot.xlabel("flow number")
+    pyplot.ylabel("amount")
     pyplot.show()
 #testflow
 
@@ -68,10 +84,10 @@ def gen(pos):
     return w[::-1]
 #gen
 
-def expand(barcode, length):
+def expand(flowcode, length):
     """
     """
-    return barcode + (barcode[-1] * (length - len(barcode)))
+    return flowcode + (flowcode[-1] * (length - len(flowcode)))
 #expand
 
 def genList(length):
@@ -91,14 +107,14 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=usage[0], epilog=usage[1])
     parser.add_argument("-l", dest="length", type=int, default=4,
-        help="barcode lendth")
+        help="flowcode lendth")
 
     args = parser.parse_args()
 
     #torrentflow(args.length)
     bc = genList(args.length)
     print '\n'.join(bc)
-    #testflow(bc)
+    testflow(bc)
 #main
 
 if __name__ == '__main__':
