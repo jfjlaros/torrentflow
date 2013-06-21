@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+#
+# TODO: Design a set of barcodes that keep the flow in sync.
+#
+
 import argparse
 import collections
 from matplotlib import pyplot
@@ -11,8 +15,20 @@ from barcode.barcode import BarCode
 usage = ["", ""]
 
 class FlowCode(object):
+    """
+    """
+
     order = "TACGTACGTCTGAGCATCGATCGATGTACAGC"
     key = "TCAG"
+
+    def __init__(self):
+        """
+        Constructor.
+        """
+        self.floworder = self.order
+        keyflow = self.findFlow(self.key)
+        self.floworder = self.order[keyflow:] + self.order[:keyflow]
+    #__init__
 
     def findFlow(self, fragment):
         """
@@ -27,7 +43,7 @@ class FlowCode(object):
         position = 0
 
         for nucleotide in fragment:
-            while self.order[position % len(self.order)] != nucleotide:
+            while self.floworder[position % len(self.floworder)] != nucleotide:
                 position += 1
 
         return position
@@ -43,11 +59,11 @@ class FlowCode(object):
         @returns: A flow code.
         @rtype str
         """
-        flowcode = self.order[flow]
+        flowcode = self.floworder[flow]
 
         for position in range(flow - 1, -1, -1):
-            if self.order[position] == flowcode[-1]:
-                flowcode += self.order[position + 1]
+            if self.floworder[position] == flowcode[-1]:
+                flowcode += self.floworder[position + 1]
 
         return flowcode[::-1]
     #findFlowCode
@@ -77,10 +93,10 @@ class FlowCode(object):
         @returns: List of flowcodes.
         @rtype: list(str)
         """
-        bc = map(lambda x: self.findFlowCode(x), range(amount))
-        newlength = max(map(lambda x: len(x), bc))
+        flowcodes = map(lambda x: self.findFlowCode(x), range(amount))
+        newlength = max(map(lambda x: len(x), flowcodes))
 
-        return map(lambda x: self.expandFlowCode(x, newlength), bc)
+        return map(lambda x: self.expandFlowCode(x, newlength), flowcodes)
     #makeFlowCodes
 #FlowCode
 
