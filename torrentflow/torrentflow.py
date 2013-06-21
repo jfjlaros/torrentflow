@@ -10,35 +10,88 @@ from barcode.barcode import BarCode
 #from . import docSplit, version, usage
 usage = ["", ""]
 
-order = "TACGTACGTCTGAGCATCGATCGATGTACAGC"
-key = "TCAG"
+class FlowCode(object):
+    order = "TACGTACGTCTGAGCATCGATCGATGTACAGC"
+    key = "TCAG"
 
-def findFlow(fragment):
-    """
-    Calculate the flow position after sequencing {fragment}.
+    def findFlow(self, fragment):
+        """
+        Calculate the flow position after sequencing {fragment}.
 
-    @arg fragment: A DNA fragment.
-    @type fragment: str
+        @arg fragment: A DNA fragment.
+        @type fragment: str
 
-    @returns: The flow position.
-    @rtype: int
-    """
-    position = 0
+        @returns: The flow position.
+        @rtype: int
+        """
+        position = 0
 
-    for nucleotide in fragment:
-        while order[position % len(order)] != nucleotide:
-            position += 1
+        for nucleotide in fragment:
+            while self.order[position % len(self.order)] != nucleotide:
+                position += 1
 
-    return position
-#findFlow
+        return position
+    #findFlow
+
+    def findFlowCode(self, flow):
+        """
+        Find a flow code that lets the sequencer end in flow {flow}.
+
+        @arg flow: Target flow.
+        @type flow: int
+
+        @returns: A flow code.
+        @rtype str
+        """
+        flowcode = self.order[flow]
+
+        for position in range(flow - 1, -1, -1):
+            if self.order[position] == flowcode[-1]:
+                flowcode += self.order[position + 1]
+
+        return flowcode[::-1]
+    #findFlowCode
+
+    def expandFlowCode(self, flowcode, length):
+        """
+        Expand a flowcode by extending the last nucleotide into a stetch.
+
+        @arg flowcode: A flowcode.
+        @type flowcode: str
+        @arg length: Target length of {flowcode}.
+        @type length: int
+
+        @returns: A flow code.
+        @rtype str
+        """
+        return flowcode + (flowcode[-1] * (length - len(flowcode)))
+    #expandFlowCode
+
+    def makeFlowCodes(self, amount):
+        """
+        Make {amount} amount of flowcodes.
+
+        @arg amount: Number of flowcodes to be generated.
+        @amount: int
+
+        @returns: List of flowcodes.
+        @rtype: list(str)
+        """
+        bc = map(lambda x: self.findFlowCode(x), range(amount))
+        newlength = max(map(lambda x: len(x), bc))
+
+        return map(lambda x: self.expandFlowCode(x, newlength), bc)
+    #makeFlowCodes
+#FlowCode
 
 def makeHistogram(fragments):
     """
     """
     histogram = collections.defaultdict(int)
+    FC = FlowCode()
 
     for fragment in fragments:
-        histogram[findFlow(fragment)] += 1
+        histogram[FC.findFlow(fragment)] += 1
 
     return histogram
 #makeHistogram
@@ -69,36 +122,6 @@ def testflow(barCodeList):
     pyplot.show()
 #testflow
 
-def gen(pos):
-    """
-    """
-    c = order[pos]
-    w = c
-
-    for i in range(pos - 1, -1, -1):
-        if order[i] == c:
-            w += order[i + 1]
-            c = order[i + 1]
-        #if
-
-    return w[::-1]
-#gen
-
-def expand(flowcode, length):
-    """
-    """
-    return flowcode + (flowcode[-1] * (length - len(flowcode)))
-#expand
-
-def genList(length):
-    """
-    """
-    bc = map(lambda x: gen(x), range(length))
-    newLength = max(map(lambda x: len(x), bc))
-
-    return map(lambda x: expand(x, newLength), bc)
-#genList
-
 def main():
     """
     Main entry point.
@@ -111,8 +134,9 @@ def main():
 
     args = parser.parse_args()
 
+    FC = FlowCode()
     #torrentflow(args.length)
-    bc = genList(args.length)
+    bc = FC.makeFlowCodes(args.length)
     print '\n'.join(bc)
     testflow(bc)
 #main
