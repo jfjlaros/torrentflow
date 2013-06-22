@@ -8,11 +8,7 @@ import argparse
 import collections
 from matplotlib import pyplot
 
-from barcode.barcode import BarCode
-#from fastools import fastools
-
-#from . import docSplit, version, usage
-usage = ["", ""]
+from . import docSplit, version, usage
 
 class FlowCode(object):
     """
@@ -88,7 +84,7 @@ class FlowCode(object):
         Make {amount} amount of flowcodes.
 
         @arg amount: Number of flowcodes to be generated.
-        @amount: int
+        @type amount: int
 
         @returns: List of flowcodes.
         @rtype: list(str)
@@ -98,63 +94,81 @@ class FlowCode(object):
 
         return map(lambda x: self.expandFlowCode(x, newlength), flowcodes)
     #makeFlowCodes
+
+    def makeHistogram(self, fragments):
+        """
+        """
+        histogram = collections.defaultdict(int)
+
+        for fragment in fragments:
+            histogram[self.findFlow(fragment)] += 1
+
+        return histogram
+    #makeHistogram
 #FlowCode
 
-def makeHistogram(fragments):
+def generate(amount, handle):
     """
+    Generate a list of flowcodes and write them to a file.
+
+    @arg amount: Number of flowcodes to be generated.
+    @type amount: int
+    @arg handle: Open writeable file handle.
+    @type handle: stream
     """
-    histogram = collections.defaultdict(int)
-    FC = FlowCode()
+    for flowcode in FlowCode().makeFlowCodes(amount):
+        handle.write("%s\n" % flowcode)
+#generate
 
-    for fragment in fragments:
-        histogram[FC.findFlow(fragment)] += 1
-
-    return histogram
-#makeHistogram
-
-def torrentflow(length):
+def plot(handle):
     """
+    Visualise the flows of a list of fagments.
+
+    @arg fragmentList: List of fragemnts.
+    @type fragmentList: list(str)
+    @arg handle: Open readable file handle.
+    @type handle: stream
     """
-    for i in range(1, length + 1):
-        h = makeHistogram(list(BarCode().allBarcodes(i)))
+    fragments = map(lambda x: x.strip(), handle.readlines())
+    histogram = FlowCode().makeHistogram(fragments)
 
-        pyplot.plot(h.keys(), h.values(), "o-", label=str(i))
-    #for
-
-    pyplot.legend(numpoints=1)
+    pyplot.plot(histogram.keys(), histogram.values(), "o-")
     pyplot.xlabel("flow number")
     pyplot.ylabel("amount")
     pyplot.show()
-#torrentflow
-
-def testflow(barCodeList):
-    """
-    """
-    h = makeHistogram(barCodeList)
-
-    pyplot.plot(h.keys(), h.values(), "o-")
-    pyplot.xlabel("flow number")
-    pyplot.ylabel("amount")
-    pyplot.show()
-#testflow
+#plot
 
 def main():
     """
     Main entry point.
     """
+    input_parser = argparse.ArgumentParser(add_help=False)
+    input_parser.add_argument("INPUT", type=argparse.FileType('r'),
+        help="input file")
+
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=usage[0], epilog=usage[1])
-    parser.add_argument("-l", dest="length", type=int, default=4,
-        help="flowcode lendth")
+    parser.add_argument("-v", action="version", version=version(parser.prog))
+    subparsers = parser.add_subparsers(dest="subcommand")
+
+    parser_generate = subparsers.add_parser("gen",
+        description=docSplit(generate))
+    parser_generate.add_argument("AMOUNT", type=int,
+        help="amount of flowcodes")
+    parser_generate.add_argument("OUTPUT", type=argparse.FileType('w'),
+        help="output file")
+
+    parser_plot = subparsers.add_parser("plot", parents=[input_parser],
+        description=docSplit(plot))
 
     args = parser.parse_args()
 
-    FC = FlowCode()
-    #torrentflow(args.length)
-    bc = FC.makeFlowCodes(args.length)
-    print '\n'.join(bc)
-    testflow(bc)
+    if args.subcommand == "gen":
+        generate(args.AMOUNT, args.OUTPUT)
+
+    if args.subcommand == "plot":
+        plot(args.INPUT)
 #main
 
 if __name__ == '__main__':
