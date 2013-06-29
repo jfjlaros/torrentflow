@@ -42,7 +42,7 @@ class FlowCode(object):
             while self.floworder[position % len(self.floworder)] != nucleotide:
                 position += 1
 
-        return position
+        return position % len(self.floworder)
     #findFlow
 
     def findFlowCode(self, flow):
@@ -97,6 +97,13 @@ class FlowCode(object):
 
     def makeHistogram(self, fragments):
         """
+        Make a histogram of all the flows after sequencing {fragements}.
+
+        @arg fragments: List of fragments.
+        @type fragments: list(str)
+
+        @returns: Counts of all flows.
+        @rtype: dict(int)
         """
         histogram = collections.defaultdict(int)
 
@@ -132,7 +139,9 @@ def plot(handle):
     fragments = map(lambda x: x.strip(), handle.readlines())
     histogram = FlowCode().makeHistogram(fragments)
 
-    pyplot.plot(histogram.keys(), histogram.values(), "o-")
+    pyplot.bar(histogram.keys(), histogram.values())
+    pyplot.xlim(-1, len(FlowCode.order) + 1)
+    pyplot.ylim(0, len(fragments) + 1)
     pyplot.xlabel("flow number")
     pyplot.ylabel("amount")
     pyplot.show()
@@ -154,8 +163,8 @@ def main():
 
     parser_generate = subparsers.add_parser("gen",
         description=docSplit(generate))
-    parser_generate.add_argument("AMOUNT", type=int,
-        help="amount of flowcodes")
+    parser_generate.add_argument("-a", dest="amount", type=int,
+        default=len(FlowCode.order), help="amount of flowcodes")
     parser_generate.add_argument("OUTPUT", type=argparse.FileType('w'),
         help="output file")
 
@@ -165,7 +174,7 @@ def main():
     args = parser.parse_args()
 
     if args.subcommand == "gen":
-        generate(args.AMOUNT, args.OUTPUT)
+        generate(args.amount, args.OUTPUT)
 
     if args.subcommand == "plot":
         plot(args.INPUT)
