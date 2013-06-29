@@ -123,6 +123,11 @@ def generate(amount, handle):
     @arg handle: Open writeable file handle.
     @type handle: stream
     """
+    maxFc = len(FlowCode.order)
+
+    if amount > maxFc:
+        raise ValueError("Amount of flow codes too large (max=%i)." % maxFc)
+
     for flowcode in FlowCode().makeFlowCodes(amount):
         handle.write("%s\n" % flowcode)
 #generate
@@ -174,7 +179,11 @@ def main():
     args = parser.parse_args()
 
     if args.subcommand == "gen":
-        generate(args.amount, args.OUTPUT)
+        try:
+            generate(args.amount, args.OUTPUT)
+        except ValueError, err:
+            parser.error(err)
+    #if
 
     if args.subcommand == "plot":
         plot(args.INPUT)
