@@ -15,17 +15,21 @@ class FlowCode(object):
     """
 
     order = "TACGTACGTCTGAGCATCGATCGATGTACAGC"
+    key = "TCAG"
 
-    def __init__(self, key="TCAG"):
+    def __init__(self, key, prefix):
         """
         Constructor.
 
-        @arg init: Initialisation string (key).
-        @type init: str
+        @arg key: Key sequence.
+        @type key: str
+        @arg prefix: Initialisation sequence.
+        @type prefix: str
         """
         self.mod = len(self.order)
         self.offset = 0
         self.offset = self.findFlow(key)
+        self.offset = self.findFlow(prefix)
     #__init__
 
     def findFlow(self, fragment):
@@ -117,7 +121,7 @@ class FlowCode(object):
     #makeHistogram
 #FlowCode
 
-def generate(amount, handle):
+def generate(amount, handle, key, prefix):
     """
     Generate a list of flowcodes and write them to a file.
 
@@ -125,17 +129,21 @@ def generate(amount, handle):
     @type amount: int
     @arg handle: Open writeable file handle.
     @type handle: stream
+    @arg key: Key sequence.
+    @type key: str
+    @arg prefix: Initialisation sequence.
+    @type prefix: str
     """
     maxFc = len(FlowCode.order)
 
     if amount > maxFc:
         raise ValueError("Amount of flow codes too large (max=%i)." % maxFc)
 
-    for flowcode in FlowCode().makeFlowCodes(amount):
+    for flowcode in FlowCode(key, prefix).makeFlowCodes(amount):
         handle.write("%s\n" % flowcode)
 #generate
 
-def plot(handle):
+def plot(handle, key, prefix):
     """
     Visualise the flows of a list of fagments.
 
@@ -143,9 +151,13 @@ def plot(handle):
     @type fragmentList: list(str)
     @arg handle: Open readable file handle.
     @type handle: stream
+    @arg key: Key sequence.
+    @type key: str
+    @arg prefix: Initialisation sequence.
+    @type prefix: str
     """
     fragments = map(lambda x: x.strip(), handle.readlines())
-    histogram = FlowCode().makeHistogram(fragments)
+    histogram = FlowCode(key, prefix).makeHistogram(fragments)
 
     pyplot.bar(histogram.keys(), histogram.values())
     pyplot.xlim(-1, len(FlowCode.order) + 1)
@@ -163,33 +175,40 @@ def main():
     input_parser.add_argument("INPUT", type=argparse.FileType('r'),
         help="input file")
 
+    init_parser = argparse.ArgumentParser(add_help=False)
+    init_parser.add_argument("-k", dest="key", type=str, default=FlowCode.key,
+        help="key sequence (%(type)s default=\"%(default)s\")")
+    init_parser.add_argument("-i", dest="prefix", type=str, default="",
+        help="initialisation sequence (%(type)s default=\"%(default)s\")")
+
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=usage[0], epilog=usage[1])
     parser.add_argument("-v", action="version", version=version(parser.prog))
     subparsers = parser.add_subparsers(dest="subcommand")
 
-    parser_generate = subparsers.add_parser("gen",
+    parser_generate = subparsers.add_parser("gen", parents=[init_parser],
         description=docSplit(generate))
     parser_generate.add_argument("-a", dest="amount", type=int,
-        default=len(FlowCode.order), help="amount of flowcodes")
+        default=len(FlowCode.order),
+        help="amount of flowcodes (%(type)s default=%(default)s)")
     parser_generate.add_argument("OUTPUT", type=argparse.FileType('w'),
         help="output file")
 
-    parser_plot = subparsers.add_parser("plot", parents=[input_parser],
-        description=docSplit(plot))
+    parser_plot = subparsers.add_parser("plot", parents=[input_parser,
+        init_parser], description=docSplit(plot))
 
     args = parser.parse_args()
 
     if args.subcommand == "gen":
         try:
-            generate(args.amount, args.OUTPUT)
+            generate(args.amount, args.OUTPUT, args.key, args.prefix)
         except ValueError, err:
             parser.error(err)
     #if
 
     if args.subcommand == "plot":
-        plot(args.INPUT)
+        plot(args.INPUT, args.key, args.prefix)
 #main
 
 if __name__ == '__main__':
