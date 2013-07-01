@@ -171,10 +171,6 @@ def main():
     """
     Main entry point.
     """
-    input_parser = argparse.ArgumentParser(add_help=False)
-    input_parser.add_argument("INPUT", type=argparse.FileType('r'),
-        help="input file")
-
     init_parser = argparse.ArgumentParser(add_help=False)
     init_parser.add_argument("-k", dest="key", type=str, default=FlowCode.key,
         help="key sequence (%(type)s default=\"%(default)s\")")
@@ -195,8 +191,10 @@ def main():
     parser_generate.add_argument("OUTPUT", type=argparse.FileType('w'),
         help="output file")
 
-    parser_plot = subparsers.add_parser("plot", parents=[input_parser,
-        init_parser], description=docSplit(plot))
+    parser_plot = subparsers.add_parser("plot", parents=[init_parser],
+        description=docSplit(plot))
+    parser_plot.add_argument("INPUT", type=argparse.FileType('r'),
+        help="input file")
 
     args = parser.parse_args()
 
