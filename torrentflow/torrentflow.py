@@ -15,15 +15,17 @@ class FlowCode(object):
     """
 
     order = "TACGTACGTCTGAGCATCGATCGATGTACAGC"
-    key = "TCAG"
 
-    def __init__(self):
+    def __init__(self, key="TCAG"):
         """
         Constructor.
+
+        @arg init: Initialisation string (key).
+        @type init: str
         """
-        self.floworder = self.order
-        keyflow = self.findFlow(self.key)
-        self.floworder = self.order[keyflow:] + self.order[:keyflow]
+        self.mod = len(self.order)
+        self.offset = 0
+        self.offset = self.findFlow(key)
     #__init__
 
     def findFlow(self, fragment):
@@ -36,13 +38,13 @@ class FlowCode(object):
         @returns: The flow position.
         @rtype: int
         """
-        position = 0
+        position = self.offset
 
         for nucleotide in fragment:
-            while self.floworder[position % len(self.floworder)] != nucleotide:
+            while self.order[position % self.mod] != nucleotide:
                 position += 1
 
-        return position % len(self.floworder)
+        return position % self.mod
     #findFlow
 
     def findFlowCode(self, flow):
@@ -55,11 +57,12 @@ class FlowCode(object):
         @returns: A flow code.
         @rtype str
         """
-        flowcode = self.floworder[flow]
+        offset = self.offset + flow
+        flowcode = self.order[offset % self.mod]
 
-        for position in range(flow - 1, -1, -1):
-            if self.floworder[position] == flowcode[-1]:
-                flowcode += self.floworder[position + 1]
+        for position in range(offset - 1, self.offset - 1, -1):
+            if self.order[position % self.mod] == flowcode[-1]:
+                flowcode += self.order[(position + 1) % self.mod]
 
         return flowcode[::-1]
     #findFlowCode
